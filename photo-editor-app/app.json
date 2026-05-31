@@ -1,0 +1,52 @@
+{
+  "expo": {
+    "name": "PhotoEditor Pro",
+    "slug": "photo-editor-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "scheme": "photoeditor",
+    "splash": {
+      "backgroundColor": "#0a0a0a"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.photoeditor.app",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Access your photo library to edit images",
+        "NSCameraUsageDescription": "Take photos to edit"
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0a0a0a"
+      },
+      "package": "com.photoeditor.app",
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "READ_MEDIA_IMAGES"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Access your photo library to edit images",
+          "cameraPermission": "Take photos to edit"
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Save edited photos to your library",
+          "savePhotosPermission": "Save edited photos to your library"
+        }
+      ]
+    ]
+  }
+}
