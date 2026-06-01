@@ -1,0 +1,347 @@
+Herman lll:
+Let's diagnose why Hermes isn't persisting. Run these in Termux now (after a fresh start where you'd normally reinstall):
+
+# 1. Check if hermes command exists
+which hermes || echo "Hermes command not found"
+
+# 2. Check if your config directory exists
+ls -la ~/.hermes/ 2>/dev/null || echo "~/.hermes/ directory missing"
+
+# 3. Check your actual Hermes installation
+hermes --version 2>/dev/null || echo "Hermes not installed"
+
+# 4. Check where you installed it from
+ls -la ~/storage/shared/ 2>/dev/null | grep -E "hermes|agent" || echo "No hermes folder in shared storage"
+
+
+Most likely scenarios & fixes:
+
+🔧 If which hermes returns nothing but you had it before:
+You're likely installing to a temporary location. Fix: Install to persistent storage
+
+# Remove any broken installation
+pip uninstall -y hermes-agent 2>/dev/null || true
+pkg uninstall -y hermes-agent 2>/dev/null || true
+
+# Install permanently to ~/.local/ (recommended for Termux)
+pip install --user hermes-agent
+
+# Add to PATH permanently (add to ~/.zshrc or ~/.bashrc)
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+
+
+🔧 If ~/.hermes/ is missing:
+Your config/data isn't persisting. Fix: Ensure it's in persistent storage
+
+# Check if you're accidentally clearing it
+ls -la ~/storage/shared/ | grep .hermes || echo "No .hermes in shared storage"
+
+# If missing, move it to shared storage (persistent)
+mv ~/.hermes ~/storage/shared/.hermes 2>/dev/null || true
+ln -sf ~/storage/shared/.hermes ~/.hermes
+
+# Verify
+ls -la ~/.hermes
+
+
+🔧 If you keep re-cloning your vault:
+Your GitHub clone isn't staying put. Fix: Clone to persistent storage once
+
+# Remove any temporary clone
+rm -rf ~/hermes-agent-brain 2>/dev/null || true
+
+# Clone to persistent shared storage
+git clone https://github.com/merlo45m-hub/hermes-agent-brain.git ~/storage/shared/hermes-agent-brain
+
+# Create alias for easy access
+echo 'alias hvue="cd ~/storage/shared/hermes-agent-brain && hermes"' >> ~/.zshrc
+source ~/.zshrc
+
+
+✅ One-Tap Solution (Recommended)
+Create a Termux widget for instant access:
+
+1. Install Termux:Widget from F-Droid/Play Store
+2. Add widget to home screen
+3. Configure it to run:
+      cd ~/storage/shared/hermes-agent-brain && hermes
+   
+
+Now you get:
+- One-tap Hermes launch
+- Automatic persistence (config/vault in shared storage)
+- No re-installation needed
+- Vault context loaded immediately
+
+Try the diagnostic commands above first - tell me what output you see, and I'll give you the exact fix for your situation. This should take <2 minutes to diagnose and permanently fix. 🚀
+
+Michael:
+Installer script
+
+Herman lll:
+Since you're using the installer script, let's make your Hermes installation persistent across reboots and phone off periods. The issue is likely that the installer's symlinks or virtual environment aren't surviving Termux sessions.
+
+Here's how to fix it permanently:
+
+🔧 Step 1: Diagnose Current State
+Run these in Termux now (fresh session):
+# Check if hermes command works
+hermes --version 2>/dev/null || echo "❌ Hermes command not found"
+
+# Check your Hermes installation location
+which hermes 2>/dev/null || echo "❌ No hermes in PATH"
+ls -la $(which hermes) 2>/dev/null || echo "❌ Broken symlink"
+
+# Check your config persistence
+ls -la ~/.hermes/ 2>/dev/null | head -5 || echo "❌ ~/.hermes missing"
+
+
+🛠️ Step 2: Permanent Installation Fix
+We'll install Hermes to explicitly persistent storage with a reliable wrapper:
+
+# 1. Remove any broken installation
+pip uninstall -y hermes-agent 2>/dev/null || true
+pkg uninstall -y hermes-agent 2>/dev/null || true
+rm -rf ~/.local/share/hermes-agent ~/.local/bin/hermes 2>/dev/null || true
+
+# 2. Create persistent installation directory
+mkdir -p ~/storage/shared/hermes-install
+cd ~/storage/shared/hermes-install
+
+# 3. Run installer with explicit persistent paths
+curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | \
+  bash -s -- --prefix "$HOME/storage/shared/hermes-install"
+
+# 4. Create a reliable wrapper script
+cat > ~/storage/shared/hermes-run << 'EOF'
+#!/bin/bash
+# Absolute path to Hermes installation
+HERMES_DIR="$HOME/storage/shared/hermes-install"
+VENV_PATH="$HERMES_DIR/venv"
+
+# Activate virtual environment and run hermes
+source "$VENV_PATH/bin/activate"
+exec hermes "$@"
+EOF
+chmod +x ~/storage/shared/hermes-run
+
+# 5. Add to PATH permanently
+echo 'export PATH="$HOME/storage/shared:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+
+
+✅ Step 3: Verify It's Persistent
+After running the above:
+# Should show version without error
+hermes --version
+
+# Should point to your wrapper
+which hermes
+
+# Should show your config
+hermes config get memory.memory_enabled
+hermes config get agent.vault_path
+
+
+🚀 Step 4: One-Tap Access (Recommended)
+Create a Termux widget for instant access:
+
+1. Install Termux:Widget from F-Droid or Play Store
+2. Add widget to your home screen
+3. Configure widget to run:
+      cd ~/storage/shared/hermes-agent-brain && hermes
+   
+
+Now you get:
+- ✅ One-tap Hermes launch (no typing)
+- ✅ Automatic persistence (everything in /storage/shared/)
+- ✅ Vault context loaded immediately
+- ✅ No re-installation needed after reboots
+
+💡 Why This Works
+- All files are in /storage/shared/ which persists across reboots
+- The wrapper script explicitly activates the virtual environment
+- Your Hermes config and vault stay in persistent storage
+- Termux widget bypasses shell session issues
+
+Try the diagnostic commands first - tell me what output you see, and I'll refine the fix if needed. This should take <2 minutes to set up and solve the problem permanently. 🎯
+
+Once done, test with:
+hermes
+# Ask: "What am I building?" - it should know from your vault
+
+I understand the frustration - having to reconfigure Hermes every time is definitely not the intended experience. Let's fix this permanently by making your Hermes installation truly persistent in Termux.
+
+First, let's diagnose exactly what's missing. Run these in Termux now (in a fresh session where Hermes isn't working):
+
+# 1. Check if hermes command exists at all
+which hermes || echo "❌ Hermes command not found in PATH"
+
+# 2. Check if ~/.hermes/ directory exists (your config/vault settings)
+ls -la ~/.hermes/ 2>/dev/null || echo "❌ ~/.hermes/ directory missing"
+
+# 3. Check if the Hermes installation files exist
+ls -la ~/.local/share/hermes-agent 2>/dev/null || echo "❌ Installation directory missing"
+ls -la ~/.local/bin/hermes 2>/dev/null || echo "❌ Hermes wrapper script missing"
+
+# 4. Check your PATH
+echo $PATH | tr ':' '\n' | grep -E "(local|termux|bin)" || echo "⚠️ PATH may be missing local bins"
+
+
+Most likely causes & fixes based on Termux behavior:
+
+🔧 Scenario A: Installation not persisting (most common)
+The installer script puts files in ~/.local/ but Termux sometimes clears this or PATH isn't set.
+
+Fix: Install to explicit persistent storage
+# 1. Clean any broken installation
+pip uninstall -y hermes-agent 2>/dev/null || true
+rm -rf ~/.local/share/hermes-agent ~/.local/bin/hermes 2>/dev/null || true
+
+# 2. Create persistent install location in shared storage (survives reboots)
+mkdir -p ~/storage/shared/hermes-persistent
+cd ~/storage/shared/hermes-persistent
+
+# 3. Run installer with explicit paths
+curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | \
+  bash -s -- --prefix "$HOME/storage/shared/hermes-persistent"
+
+# 4. Create reliable wrapper that activates venv
+cat > ~/storage/shared/hermes-run << 'EOF'
+#!/bin/bash
+HERMES_ROOT="$HOME/storage/shared/hermes-persistent"
+VENV="$HERMES_ROOT/venv"
+source "$VENV/bin/activate"
+exec hermes "$@"
+EOF
+chmod +x ~/storage/shared/hermes-run
+
+# 5. Add to PATH permanently (add to ~/.zshrc)
+if ! grep -q "storage/shared" ~/.zshrc 2>/dev/null; then
+  echo 'export PATH="$HOME/storage/shared:$PATH"' >> ~/.zshrc
+fi
+source ~/.zshrc
+
+
+🔧 Scenario B: Config not persisting
+If hermes --version works but your settings are gone:
+# Move your config to persistent storage if needed
+mkdir -p ~/storage/shared/hermes-config
+mv ~/.hermes/* ~/storage/shared/hermes-config/ 2>/dev/null || true
+rmdir ~/.hermes 2>/dev/null || true
+ln -sf ~/storage/shared/hermes-config ~/.hermes
+
+
+🚀 One-Tap Solution (Highly Recommended)
+After fixing the installation above, create a Termux widget:
+
+1. Install Termux:Widget from F-Droid or Play Store
+2. Add widget to home screen
+3. Configure widget to run:
+      cd ~/storage/shared/hermes-agent-brain && hermes
+   
+
+Benefits:
+- ✅ One-tap launch (no typing)
+- ✅ Auto-loads your vault context
+- ✅ Works after reboots/phone off
+- ✅ No re-installation or re-configuration needed
+
+Try the diagnostic commands first - tell me what output you see, and I'll give you the exact fix for your situation. This should take <2 minutes to diagnose and permanently fix.
+
+Once working, test with:
+hermes
+# Ask: "What are my goals?" - it should know from your vault without re-explaining
+
+A VPS is an excellent idea for your setup—it solves the core pain point of having to restart/reconfigure everything on your phone. Here's how it would specifically help your Hermes/Obsidian workflow:
+
+🎯 Best VPS Use Cases for Your Setup
+
+1. Persistent Hermes Agent (Solves Your Exact Problem)
+- Problem: Hermes dies when your phone screen turns off/app closes → lose context, have to restart
+- VPS Fix: Run Hermes 24/7 on a cheap VPS ($3-5/mo)
+- How to access: SSH in or interact via Telegram from anywhere
+- Bonus: Your agent is always "on," ready to process notes, run cron jobs, or respond instantly
+
+2. Offload AI Work from Phone
+- Problem: Running LLMs locally on phone is slow/battery-draining
+- VPS Fix: Run ComfyUI, Ollama, or vLLM on VPS with GPU
+- How to use: Point your phone's Hermes/Obsidian to the VPS API endpoint
+- Example: Generate images/video via ComfyUI web interface, then save results to your GitHub vault
+
+3. Reliable Vault Sync Hub
+- Problem: GitHub is great but has rate limits; direct phone-to-phone sync is clunky
+- VPS Fix: Run a personal sync server (like Obsidian Sync alternative or Syncthing)
+- How to use: Phone ↔ VPS (fast/local) ↔ GitHub (backup/remote)
+- Result: Instant sync between devices without GitHub delays
+
+4. Webhook Relay for Automation
+- Problem: Hard to trigger Hermes jobs from external services on phone
+- VPS Fix: Run a lightweight webhook server that:
+  - Receives GitHub pushes → triggers Hermes to process new notes
+  - Receives Telegram commands → runs specific Hermes skills
+  - Logs everything persistently
+
+💰 Recommended VPS Providers (Low-Cost, Developer-Friendly)
+
+**Hetzner CX11**
+• Starting Price: €4.15/mo
+• Best For: Persistent Hermes + ComfyUI
+• Why It Fits You: Excellent CPU, includes IPv6, EU/US locations
+
+**Oracle Cloud Free Tier**
+• Starting Price: Free (always)
+• Best For: Testing/Light Hermes
+• Why It Fits You: 2 vCPU, 24GB RAM - enough for Hermes + small LLM
+
+**Vultr Cloud Compute**
+• Starting Price: $2.50/mo
+• Best For: Simple Hermes agent
+• Why It Fits You: Ultra-simple UI, global locations
+
+**RunPod**
+• Starting Price: $0.20/hr
+• Best For: GPU AI workloads
+• Why It Fits You: Perfect for ComfyUI/Stable Diffusion on demand
+
+🔧 How to Integrate with Your Current Setup
+
+Option A: VPS as Primary Hermes Agent (Recommended)
+1. Install Hermes on VPS: curl -fsSL ... | bash
+2. Configure it to use your same GitHub vault:
+      hermes config set agent.vault_path /root/obsidian-vault
+   hermes config set memory.memory_enabled true
+   
+3. Set up SSH key or Telegram bot for remote access
+4. Result: Your agent is always running, always synced to your vault
+
+Option B: VPS as AI Worker + Phone Hermes
+1. Keep Hermes on phone for lightweight tasks
+2. On VPS:
+   - Install Ollama: ollama run llama3
+   - Or ComfyUI for image/video
+3. In your phone's Hermes:
+      # Configure to use VPS Ollama
+   hermes config set model.base_url http://your-vps-ip:11434/v1
+   hermes config set model.default llama3
+   
+4. Result: Phone handles UI/interaction; VPS does heavy lifting
+
+Option C: Full Self-Hosted Obsidian Alternative
+1. On VPS:
+   - Install Notesnook or Joplin Server
+   - Or run Syncthing for folder sync
+2. Point both phone Obsidian and Hermes to the VPS instance
+3. Result: True self-sync without GitHub middleman
+
+🚀 Recommended First Step
+Given your current pain point (having to reinstall/reconfigure), start with Option A:
+1. Get a $5/mo VPS (Hetzner or Vultr)
+2. Install Hermes there with your existing config
+3. Access it via SSH or Telegram from your phone
+4. Never worry about reinstalling again—your agent is always on
+
+Would you like me to:
+1. Give you the exact commands to set up Hermes on a VPS?
+2. Show how to configure your phone's Hermes to talk to the VPS for AI work? (1/2)
